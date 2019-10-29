@@ -13,8 +13,8 @@ __version__ = "2019-10-21"
 import os
 import sys
 import numpy as np
-import pandas as pd
 import xarray as xr
+import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors
 from matplotlib import ticker
@@ -22,93 +22,6 @@ import datetime as dt
 import netCDF4 as nc
 from scipy.interpolate import griddata
 
-lat = 691
-lon = 886
-T_ave = np.zeros((12,lat,lon))
-R_ave = np.zeros((12,lat,lon))
-T_AU_ave = np.zeros(30)
-R_AU_ave = np.zeros(30)
-
-# load landmask file
-fmask     = "/srv/ccrc/data02/z3236814/data/AWAP/awap_landmask.nc"
-data_mask = nc.Dataset(fmask,'r')
-landmask  = pd.DataFrame(data_mask.variables['landmask'][:,:])#, columns=['latitude', 'longitude'])
-#print(landmask)
-
-# calculate
-for i in np.arange(1979,2020,1):
-    ftmax = "/srv/ccrc/data02/z3236814/data/AWAP/DAILY/netcdf/tmax/tmax.%s.nc" %(i)
-    ftmin = "/srv/ccrc/data02/z3236814/data/AWAP/DAILY/netcdf/tmin/tmin.%s.nc" %(i)
-    frain = "/srv/ccrc/data02/z3236814/data/AWAP/DAILY/netcdf/rainfall_calib/pre.%s.nc" %(i)
-
-    data_tmax = xr.open_dataset(ftmax)
-    data_tmin = xr.open_dataset(ftmin)
-    data_rain = xr.open_dataset(frain)
-    print(data_tmax.time.values)
-    Time      = pd.to_datetime(data_tmax.time.values,format="%Y%j",infer_datetime_format=False)
-    tmax      = data_tmax.variable_name.values
-    print(tmax)
-    #tmax      = pd.DataFrame(data=data_tmax.variables['tmax'][:,:,:], columns=['time','lat', 'lon'])
-    #tmin      = pd.DataFrame(data=data_tmin.variables['tmin'][:,:,:], columns=['time','lat', 'lon'])
-    #rain      = pd.DataFrame(data=data_rain.variables['rain'][:,:,:], columns=['time','lat', 'lon'])
-
-
-
-    tmax['dates'] = Time
-    tmax = tmax.set_index('dates')
-    tmax = tmax.resample("M").agg('mean')
-
-    tmin['dates'] = Time
-    tmin = tmin.set_index('dates')
-    tmin = tmin.resample("M").agg('mean')
-
-    rain['dates'] = Time
-    rain = rain.set_index('dates')
-    rain = rain.resample("M").agg('mean')
-
-    tmax = tmax.where(landmask == 1, float(nan))
-    tmin = tmin.where(landmask == 1, float(nan))
-    rain = rain.where(landmask == 1, float(nan))
-
-    print(Time)
-    print(tmax)
-
-    if i == 1979:
-        T_ave[11,:,:] = (tmax[11,:,:] + tmin[11,:,:])/2.
-        R_ave[11,:,:] = rain[11,:,:]
-        tmax_former = tmax[11,:,:]
-        tmin_former = tmin[11,:,:]
-        rain_former = rain[11,:,:]
-    elif i in np.arange(1980,2019):
-        T_ave    = T_ave + (tmax+tmin)/2.
-        R_ave    = R_ave + rain
-        T_AU_ave[i] = ( tmax_former.mean() + tmin_former.mean() \
-                       +tmax[0,:,:].mean() + tmin[0,:,:].mean() \
-            	       +tmax[1,:,:].mean() + tmin[1,:,:].mean() )/6.
-        R_AU_ave[i] = ( rain_former.mean() \
-                        +rain[0,:,:].mean() \
-                        +rain[1,:,:].mean() )/3.
-        tmax_former = tmax[11,:,:]
-        tmin_former = tmin[11,:,:]
-        rain_former = rain[11,:,:]
-    elif i == 2019:
-        T_ave[0:1,:,:] = T_ave[0:1,:,:] + (tmax[0:1,:,:] + tmin[0:1,:,:])/2.
-        R_ave[0:1,:,:] = R_ave[0:1,:,:] + rain[0:1,:,:]
-        T_AU_ave[i] =( tmax_former.mean() + tmin_former.mean() \
-                      +tmax[0,:,:].mean() + tmin[0,:,:].mean() \
-                      +tmax[1,:,:].mean() + tmin[1,:,:].mean() )/6.
-        R_AU_ave[i] =( rain_former.mean() \
-                      +rain[0,:,:].mean() \
-                      +rain[1,:,:].mean() )/3.
-
-T_ave = T_ave/30.
-R_ave = R_ave/30.
-
-T_mean = np.zeros(30)
-R_mean = np.zeros(30)
-for i in np.arange(0,30):
-    T_mean[i] = T_AU_ave.mean()
-    R_mean[i] = R_AU_ave.mean()
 
 # ____________________ Plot obs _______________________
 fig = plt.figure(figsize=[15,10])
@@ -138,6 +51,116 @@ plt.rcParams['axes.labelcolor'] = almost_black
 
 ax1 = fig.add_subplot(211)
 ax2 = fig.add_subplot(212)
+
+
+lat = 691
+lon = 886
+T_ave = np.zeros((12,lat,lon))
+R_ave = np.zeros((12,lat,lon))
+T_AU_ave = np.zeros(30)
+R_AU_ave = np.zeros(30)
+
+# load landmask file
+fmask     = "/srv/ccrc/data02/z3236814/data/AWAP/awap_landmask.nc"
+data_mask = nc.Dataset(fmask,'r')
+Lat       = data_mask.variables['latitude'][:]
+Lon       = data_mask.variables['longitude'][:]
+landmask  = xr.DataArray(data_mask.variables['landmask'][:,:], dims=('lat','lon'), coords={'lat': Lat, 'lon': Lon})
+print(landmask)
+data_mask.close()
+
+# calculate
+for i in np.arange(1979,2020,1):
+    ftmax = "/srv/ccrc/data02/z3236814/data/AWAP/DAILY/netcdf/tmax/tmax.%s.nc" %(i)
+    ftmin = "/srv/ccrc/data02/z3236814/data/AWAP/DAILY/netcdf/tmin/tmin.%s.nc" %(i)
+    frain = "/srv/ccrc/data02/z3236814/data/AWAP/DAILY/netcdf/rainfall_calib/pre.%s.nc" %(i)
+
+    data_tmax = nc.Dataset(ftmax, 'r')
+    data_tmin = nc.Dataset(ftmin, 'r')
+    data_rain = nc.Dataset(frain, 'r')
+
+    # set coords
+    Time      = pd.to_datetime(data_tmax.variables['time'][:],format="%Y%j",infer_datetime_format=False)
+
+    # read 3D data
+    tmax      = xr.DataArray(data_tmax.variables['tmax'][:,:,:], dims=('time','lat','lon'), coords={'time':Time, 'lat': Lat, 'lon': Lon})
+    tmin      = xr.DataArray(data_tmin.variables['tmin'][:,:,:], dims=('time','lat','lon'),coords={'time':Time, 'lat': Lat, 'lon': Lon})
+    rain      = xr.DataArray(data_rain.variables['pre'][:,:,:], dims=('time','lat','lon'), coords={'time':Time, 'lat': Lat, 'lon': Lon})
+
+    #xarray.DataArray.set_index
+
+    data_tmax.close()
+    data_tmin.close()
+    data_rain.close()
+
+    tmax = tmax.resample(time="M").mean()
+    tmin = tmin.resample(time="M").mean()
+    rain = rain.resample(time="M").mean()
+
+    for j in np.arange(0,12):
+        tmax[j,:,:] = tmax[j,:,:].where(landmask == 1)
+        tmin[j,:,:] = tmin[j,:,:].where(landmask == 1)
+        rain[j,:,:] = rain[j,:,:].where(landmask == 1)
+
+    #img = ax1.imshow(tmax[0,:,:], interpolation='nearest')
+    #plt.show()
+
+    if i == 1979:
+        print("i=1979")
+        T_ave[11,:,:] = (tmax[11,:,:] + tmin[11,:,:])/2.
+        R_ave[11,:,:] = rain[11,:,:]
+        temp_former = (tmax[11,:,:] + tmin[11,:,:])/2.
+        rain_former = rain[11,:,:]
+    elif i in np.arange(1980,2019):
+        print("1979 < i < 2019 ")
+        T_ave    = T_ave + (tmax+tmin)/2.
+        R_ave    = R_ave + rain
+        T_AU_ave[i-1979] = ( temp_former.nanmean() \
+                       +(tmax[0,:,:].nanmean() + tmin[0,:,:].nanmean())/2. \
+            	       +(tmax[1,:,:].nanmean() + tmin[1,:,:].nanmean())/2. )/3.
+        R_AU_ave[i-1979] = ( rain_former.nanmean() \
+                        +rain[0,:,:].nanmean() \
+                        +rain[1,:,:].nanmean() )/3.
+        temp_former = (tmax[11,:,:] + tmin[11,:,:])/2.
+        rain_former = rain[11,:,:]
+        '''
+        img1 = ax1.imshow(temp_former, interpolation='nearest')
+        img2 = ax2.imshow(rain_former, interpolation='nearest')
+
+
+        cbar = fig.colorbar(img1, orientation="vertical", pad=0.1, shrink=.6) #"horizontal"
+        tick_locator = ticker.MaxNLocator(nbins=5)
+        cbar.locator = tick_locator
+        cbar.update_ticks()
+
+        cbar = fig.colorbar(img2, orientation="vertical", pad=0.1, shrink=.6) #"horizontal"
+        tick_locator = ticker.MaxNLocator(nbins=5)
+        cbar.locator = tick_locator
+        cbar.update_ticks()
+        plt.show()
+        '''
+    elif i == 2019:
+        print("i = 2019")
+        T_ave[0:1,:,:] = T_ave[0:1,:,:] + (tmax[0:1,:,:] + tmin[0:1,:,:])/2.
+        R_ave[0:1,:,:] = R_ave[0:1,:,:] + rain[0:1,:,:]
+        T_AU_ave[i-1979] =( temp_former.nanmean() \
+                       +(tmax[0,:,:].nanmean() + tmin[0,:,:].nanmean())/2. \
+            	       +(tmax[1,:,:].nanmean() + tmin[1,:,:].nanmean())/2. )/3.
+        R_AU_ave[i-1979] =( rain_former.nanmean() \
+                      +rain[0,:,:].nanmean() \
+                      +rain[1,:,:].nanmean() )/3.
+T_ave = T_ave/30.
+R_ave = R_ave/30.
+
+#plt.plot(T_AU_ave)
+#plt.show()
+T_mean = np.zeros(30)
+R_mean = np.zeros(30)
+for i in np.arange(0,30):
+    T_mean[i] = T_AU_ave.mean()
+    R_mean[i] = R_AU_ave.mean()
+
+'''
 
 width = 1.
 x = np.arange(1980,2020)
@@ -170,3 +193,4 @@ ax2.set_ylim(0.,5.)
 
 
 fig.savefig("ge_jun.png", bbox_inches='tight', pad_inches=0.1)
+'''
