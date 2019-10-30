@@ -150,17 +150,17 @@ R_Feb_19 = Rain[-1,:,:] - R_Feb
 
 
 # ____________________ Plot obs _______________________
-fig1 = plt.figure(figsize=[15,10],constrained_layout=True)
+fig1 = plt.figure(figsize=[15,10])
 fig1.subplots_adjust(hspace=0.1)
 fig1.subplots_adjust(wspace=0.05)
 plt.rcParams['text.usetex'] = False
 plt.rcParams['font.family'] = "sans-serif"
 plt.rcParams['font.sans-serif'] = "Helvetica"
-plt.rcParams['axes.labelsize'] = 14
-plt.rcParams['font.size'] = 14
+plt.rcParams['axes.labelsize'] = 10
+plt.rcParams['font.size'] = 10
 plt.rcParams['legend.fontsize'] = 10
-plt.rcParams['xtick.labelsize'] = 14
-plt.rcParams['ytick.labelsize'] = 14
+plt.rcParams['xtick.labelsize'] = 10
+plt.rcParams['ytick.labelsize'] = 10
 
 almost_black = '#262626'
 # change the tick colors also to the almost black
@@ -207,9 +207,7 @@ ax2.set_xlim(1980,2020)
 fig1.savefig("figure1.png", bbox_inches='tight', pad_inches=0.1)
 
 # Figure 2
-fig2 = plt.figure(constrained_layout=True)
-fig2.subplots_adjust(hspace=0.15)
-fig2.subplots_adjust(wspace=0.1)
+fig2 = plt.figure(figsize=[15,10])
 axs1 = fig2.add_subplot(221)
 axs2 = fig2.add_subplot(222)
 axs3 = fig2.add_subplot(223)
@@ -225,17 +223,21 @@ img1 = axs1.imshow(T_Dec_19[::-1,:], cmap=cmap, vmin=-3.5, vmax=3.5, origin="upp
 img2 = axs2.imshow(T_Jan_19[::-1,:], cmap=cmap, vmin=-3.5, vmax=3.5, origin="upper", interpolation='nearest')
 img3 = axs3.imshow(T_Feb_19[::-1,:], cmap=cmap, vmin=-3.5, vmax=3.5, origin="upper", interpolation='nearest')
 img4 = axs4.imshow(T_Sum_19[::-1,:], cmap=cmap, vmin=-3.5, vmax=3.5, origin="upper", interpolation='nearest')
-fig2.colorbar(img1, ax=[axs3, axs4],location='bottom')
+#fig2.colorbar(img1, ax=[axs3, axs4],location='bottom')
+colorbar_position = [0.25,-0.02,0.6,0.03]
+cax = plt.axes(colorbar_position)
+fig2.colorbar(img1,cax=cax,orientation='horizontal',spacing='proportional',extend='both')
+#fig2.subplots_adjust(hspace=0.2,wspace=0.2)
+fig2.tight_layout()
 fig2.savefig("figure2.png", bbox_inches='tight', pad_inches=0.1)
 
 # Figure 3
-fig3 = plt.figure(constrained_layout=True)
-fig3.subplots_adjust(hspace=0.15)
-fig3.subplots_adjust(wspace=0.1)
+fig3 = plt.figure(figsize=[15,10])
 axs1 = fig3.add_subplot(221)
 axs2 = fig3.add_subplot(222)
 axs3 = fig3.add_subplot(223)
 axs4 = fig3.add_subplot(224)
+
 
 cmap = plt.cm.jet #nipy_spectral
 axs1.set_title("(a) Dec")
@@ -243,11 +245,17 @@ axs2.set_title("(b) Jan")
 axs3.set_title("(c) Feb")
 axs4.set_title("(d) Summer")
 
-img1 = axs1.imshow(R_Dec_19[::-1,:], cmap=cmap, vmin=-9., vmax=9., origin="upper", interpolation='nearest')
-img2 = axs2.imshow(R_Jan_19[::-1,:], cmap=cmap, vmin=-9., vmax=9., origin="upper", interpolation='nearest')
-img3 = axs3.imshow(R_Feb_19[::-1,:], cmap=cmap, vmin=-9., vmax=9., origin="upper", interpolation='nearest')
-img4 = axs4.imshow(R_Sum_19[::-1,:], cmap=cmap, vmin=-9., vmax=9., origin="upper", interpolation='nearest')
-fig3.colorbar(img1, ax=[axs3, axs4],location='bottom')
+img1 = axs1.imshow(R_Dec_19[::-1,:], cmap=cmap, vmin=-8., vmax=8., origin="upper", interpolation='nearest')
+img2 = axs2.imshow(R_Jan_19[::-1,:], cmap=cmap, vmin=-8., vmax=8., origin="upper", interpolation='nearest')
+img3 = axs3.imshow(R_Feb_19[::-1,:], cmap=cmap, vmin=-8., vmax=8., origin="upper", interpolation='nearest')
+img4 = axs4.imshow(R_Sum_19[::-1,:], cmap=cmap, vmin=-8., vmax=8., origin="upper", interpolation='nearest')
+
+colorbar_position = [0.25,-0.02,0.6,0.03]
+cax = plt.axes(colorbar_position)
+fig3.colorbar(img1,cax=cax,orientation='horizontal',spacing='proportional',extend='both')
+#fig3.subplots_adjust(hspace=0.2,wspace=0.2)
+fig3.tight_layout()
+
 fig3.savefig("figure3.png", bbox_inches='tight', pad_inches=0.1)
 
 f = nc.Dataset("AWAP_2015-2019_Summer_Temp_Rain.nc","w",format='NETCDF4')
@@ -266,12 +274,12 @@ time = f.createVariable('time', 'i4', ('time',))
 time.units = "years since 2015"
 time.long_name = "time"
 time.calendar = "standard"
-time[:] = [2015, 2016, 2017, 2018, 2019]
+time[:] = [0, 1, 2, 3, 4]
 
 year = f.createVariable('year', 'i4', ('year',))
 year.units = "years since 1980"
 year.long_name = "year"
-year[:] = np.arange(1980,2020,1)
+year[:] = np.arange(0,40,1)
 
 latitude = f.createVariable('lat', 'f4', ('lat',))
 latitude.units = "degrees_north"
